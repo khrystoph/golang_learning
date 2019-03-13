@@ -14,48 +14,45 @@ func mergesort(uintarray []int) (err error) {
 	return nil
 }
 
-func quicksort(uintarray []int) (quicksorted *[]int, interr error) {
+func quicksort(uintarray []int) (quicksorted *[]int, err error) {
+	fmt.Printf("entering quicksort.")
 	return nil, nil
 }
 
-func bubblesort(uintarray *[]int) (bubblesorted *[]int, err error) {
+func bubblesort(uintarray []int) (err error) {
 	var (
-		intlen   = len(*uintarray)
-		intarray = *uintarray
-		swapped  = true
+		intlen  = len(uintarray)
+		swapped = true
 	)
 	for swapped {
 		swapped = false
 		for i := 0; i < (intlen - 1); i++ {
-			if intarray[i] > intarray[i+1] {
-				intarray[i], intarray[i+1] = intarray[i+1], intarray[i]
+			if uintarray[i] > uintarray[i+1] {
+				uintarray[i], uintarray[i+1] = uintarray[i+1], uintarray[i]
 				swapped = true
 			}
 		}
 	}
-
-	bubblesorted = &intarray
 	err = nil
 
-	return bubblesorted, err
+	return err
 }
 
-func arrayprinter(slicepntr *[]int) (err error) {
-	var slicearray = *slicepntr
-	for i := range slicearray {
-		fmt.Printf("Value in slicepntr[%d] is %v\n", i, slicearray[i])
+func arrayprinter(sliceint []int, arrayname string) (err error) {
+	fmt.Printf("\nPrinting values for %s:\n", arrayname)
+	for i := range sliceint {
+		fmt.Printf("Value in %s[%d] is %v\n", arrayname, i, sliceint[i])
 	}
-	fmt.Printf("The address of pointer slicepointer is %p\n", slicepntr)
+	fmt.Printf("The address of pointer slicepointer is %p\n", sliceint)
 	return nil
 }
 
 func main() {
 	var (
-		intarray    = []int{}
-		intarrayptr = &intarray
-		arraysize   = 10
-		val         int
-		err         error
+		intarray, bubbleint, mergeint, quickint, heapint, mergeintthread []int
+		arraysize                                                        int
+		val                                                              int
+		err                                                              error
 	)
 
 	flag.IntVar(&arraysize, "arraysize", 10, "enter an integer")
@@ -68,12 +65,22 @@ func main() {
 		intarray = append(intarray, val)
 	}
 
-	if intarrayptr, err = bubblesort(intarrayptr); err != nil {
+	bubbleint = append(bubbleint, intarray...)
+	mergeint = append(mergeint, intarray...)
+	quickint = append(quickint, intarray...)
+	heapint = append(heapint, intarray...)
+	mergeintthread = append(mergeintthread, intarray...)
+
+	if bubblesort(bubbleint); err != nil {
 		fmt.Printf("Error sorting with bubble sort. Error msg: %v\n", err)
 	}
 
-	intarray = *intarrayptr
-	arrayprinter(&intarray)
+	fmt.Printf("Pointers to arrays:\nintarray:%p\nbubbleint:%p\nmergeint:%p\n"+
+		"quickint:%p\nheapint:%p\nmergeintthread:%p", intarray, bubbleint, mergeint,
+		quickint, heapint, mergeintthread)
+
+	arrayprinter(intarray, "intarray")
+	arrayprinter(bubbleint, "bubbleint")
 
 	return
 }

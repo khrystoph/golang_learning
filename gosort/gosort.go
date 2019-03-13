@@ -81,6 +81,9 @@ func main() {
 
 	arrayprinter(intarray, "intarray")
 	arrayprinter(bubbleint, "bubbleint")
+	arrayprinter(mergeint, "mergeint")
+	arrayprinter(quickint, "quickint")
+	arrayprinter(mergeintthread, "mergeintthread")
 
 	return
 }

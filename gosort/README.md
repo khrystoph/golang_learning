@@ -48,8 +48,8 @@ So, another major point is that I'm going to keep the array size the same, but t
 
 Additionally, these tests will be run in three different places. Once on my HPC server at home (I'll power on the Xeon E5v4 w/128GB ram for this. It has 20 physical cores and 40 threads...which should provide us with plenty of concurrency to get interesting data from our threaded algorithms), the second test will be on a c5.4xlarge (16vCPUs, 32GB ram) running in amazon's AWS cloud, the third test will be run from my personal laptop at home (4 physical Cores, 8 threads, 16GB ram). I might also throw in a m5.24xlarge and/or an r5.24xlarge to see if the added RAM+CPU makes a significant difference in a few of our algorithms. The added RAM may reduce the number of disk access times in the situation where we are using very, very large array sizes. 
 
-== Data ==
+== Data == 
 Not completed yet.
 
-== Conclusions ==
+== Conclusions == 
 Not completed yet.

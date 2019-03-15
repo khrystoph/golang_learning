@@ -11,15 +11,20 @@ Finally, each of these algorithms will be run in their own thread (to leverage t
 
 == Algorithms and Explanations == 
 
-Bubblesort - classic starting sorting algorithm that is not efficient, but it is stable. This is the first sorting algorithm discussed in classes due to its simplicity in implementation as well as ability to follow the logic. 
+Bubblesort - classic starting sorting algorithm that is not efficient, but it is stable. This is the first sorting algorithm discussed in classes due to its simplicity in implementation as well as ability to follow the logic.  
+
 Quicksort - as its name implies it's quick...it partitions the data using a pivot and sorts, which is one of the many "divide and conquer" sorting methods. It also does this in-place, as opposed to creating new arrays. This may also benefit from golang's threading as you can use the partitions created as individual threads. 
-Heapsort - this uses the heap datastructure concept and takes a divide and conquer method by using the power of binary tree to take the largest element from the heap and place it in a sorted array. 
+
+Heapsort - this uses the heap datastructure concept and takes a divide and conquer method by using the power of binary tree to take the largest element from the heap and place it in a sorted array.  
+
 Mergesort - this is probably the most easily recognizable and definitely one of the most stable sorting algorithms. It's worst and average sort times are both almost the same. This is also a "divide and conquer" sorting method and leverages recursion to split the array into smaller faster pieces to sort and re-insert into the main array. 
+
 Threaded Mergesort - This takes the mergesort and splits it out into threads via the recursion call. When we recurse into the next call of itself, we spawn this call as a thread. We then leverage channels to ensure thread safety, but we allow the go scheduler to optimize the threads to minimize context switching. 
 
 I will re-evaluate adding additional algorithms down the road (I was shooting for 6) once I figure out which one(s) I want to add. I may add the hybrid heapsort/mergesort method described in the heapsort portion of the Performance Expectations section. Threaded Quicksort would also be another potential candidate for adding into this experiment as it uses divide and conquer to sort the array. 
 
 == Performance Expectations == 
+
 Bubblesort - This algorithm was one of the original and slowest algorithms. results should always be slower than all of the other algorithms as expected O is O(n^2). 
 Heapsort - This algorithm expects a roughly similar completion time of O(nlog n). This mirrors a few other algorithms in the execution time, but it does not get the performance gains that can be achieved with threading, unlike a few of the other methods that exist. It seems that a combination of mergesort and heapsort can achieve parallelization on the order of O((nlog n)/m) where m is the number of threads that the system can handle. The advantage of heapsort is that it uses n+1 memory (n+constant) for auxilliary memory...which means that it works well on memory constrained systems. It's worst performance is also O(nlog n), but it's not considered a stable sort. 
 Quicksort - The expectation of this sort is that on average (over a large enough sample size), we should see that Quicksort has an execution time of O(nlog n), just like heapsort and the divide and conquer methods. Optimizations can speed this up, but make it unstable. Also, the speed is dependent upon the chosen pivot point. If the pivot is at the start or the end, it will end up with the worst time, which is O(n^2). 

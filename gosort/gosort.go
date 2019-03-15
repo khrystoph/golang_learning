@@ -9,16 +9,46 @@ import (
 	"time"
 )
 
+/*stub out single-threaded mergesort algorithm's function call.
+Expected big O time is O(nlog n) in average and worst case.
+Expectation is that this will be the second fastest to complete on average.
+However, this should come out 2-X times slower than threaded mergesort as
+the threads should have a speed multiplier based on the number of CPUs
+the go scheduler can/will schedule the threads across.
+*/
 func mergesort(uintarray []int) (err error) {
 	fmt.Printf("entering mergesort.")
 	return nil
 }
 
-func quicksort(uintarray []int) (quicksorted *[]int, err error) {
-	fmt.Printf("entering quicksort.")
-	return nil, nil
+/*stub out threaded mergesort algorithms's function call.
+This algorithm is expected to get variable performance, but better than nlog n.
+I expect that with a 4-core processor, we should see about a 4x gain in speed.
+Likely it will be a bit slower than 4x due to context switching and memory access
+patterns, but there will be tests run on several sizes of processor (including 20+ cores).
+Once everything works as expected.
+*/
+func tmergesort(uintarray []int) (err error) {
+	fmt.Printf("entering threaded mergesort.")
+	return nil
 }
 
+//stubbing out quicksort algorithm's function call
+func quicksort(uintarray []int) (err error) {
+	fmt.Printf("entering quicksort.")
+	return nil
+}
+
+//stubbing out heapsort algorithm's function call
+func heapsort(uintarray []int) (err error) {
+	fmt.Printf("entering heapsort")
+	return nil
+}
+
+/*
+Bubble sort algorithm. This algorithm was the original and slow. results should
+always be slower than the other algorithms as expected O is O(n2).
+*/
 func bubblesort(uintarray []int) (err error) {
 	var (
 		intlen  = len(uintarray)
@@ -33,9 +63,8 @@ func bubblesort(uintarray []int) (err error) {
 			}
 		}
 	}
-	err = nil
 
-	return err
+	return nil
 }
 
 func arrayprinter(sliceint []int, arrayname string) (err error) {

@@ -10,11 +10,7 @@ import (
 )
 
 /*stub out single-threaded mergesort algorithm's function call.
-Expected big O time is O(nlog n) in average and worst case.
-Expectation is that this will be the second fastest to complete on average.
-However, this should come out 2-X times slower than threaded mergesort as
-the threads should have a speed multiplier based on the number of CPUs
-the go scheduler can/will schedule the threads across.
+See Readme for info about this Sorting algorithm.
 */
 func mergesort(uintarray []int) (err error) {
 	fmt.Printf("entering mergesort.")
@@ -22,11 +18,7 @@ func mergesort(uintarray []int) (err error) {
 }
 
 /*stub out threaded mergesort algorithms's function call.
-This algorithm is expected to get variable performance, but better than nlog n.
-I expect that with a 4-core processor, we should see about a 4x gain in speed.
-Likely it will be a bit slower than 4x due to context switching and memory access
-patterns, but there will be tests run on several sizes of processor (including 20+ cores).
-Once everything works as expected.
+See the readme for more info on tmergesort.
 */
 func tmergesort(uintarray []int) (err error) {
 	fmt.Printf("entering threaded mergesort.")
@@ -34,9 +26,14 @@ func tmergesort(uintarray []int) (err error) {
 }
 
 //stubbing out quicksort algorithm's function call
-func quicksort(uintarray []int) (err error) {
-	fmt.Printf("entering quicksort.")
+func quicksort(uintarray []int, lo int, hi int) (err error) {
+	if uintarray[lo] < uintarray[hi]
 	return nil
+}
+
+//partitioning function for quicksort algorithm
+func quicksortpart(uintarray []int, lo int, hi int) (err error) {
+
 }
 
 //stubbing out heapsort algorithm's function call
@@ -46,8 +43,7 @@ func heapsort(uintarray []int) (err error) {
 }
 
 /*
-Bubble sort algorithm. This algorithm was the original and slow. results should
-always be slower than the other algorithms as expected O is O(n2).
+Bubblesort. See Readme for more info.
 */
 func bubblesort(uintarray []int) (err error) {
 	var (
@@ -102,6 +98,10 @@ func main() {
 
 	if bubblesort(bubbleint); err != nil {
 		fmt.Printf("Error sorting with bubble sort. Error msg: %v\n", err)
+	}
+
+	if quicksort(quickint, 0, len(quickint -1)); err != nil {
+		fmt.Printf("Error sorting with quicksort. Error msg: %v\n", err)
 	}
 
 	fmt.Printf("Pointers to arrays:\nintarray:%p\nbubbleint:%p\nmergeint:%p\n"+

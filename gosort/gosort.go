@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"math/rand"
+	"sort"
 	"time"
 )
 
@@ -27,13 +28,16 @@ func tmergesort(uintarray []int) (err error) {
 
 //stubbing out quicksort algorithm's function call
 func quicksort(uintarray []int, lo int, hi int) (err error) {
-	if uintarray[lo] < uintarray[hi]
+	if uintarray[lo] < uintarray[hi] {
+
+	}
 	return nil
 }
 
 //partitioning function for quicksort algorithm
 func quicksortpart(uintarray []int, lo int, hi int) (err error) {
-
+	fmt.Printf("entering quicksort partitioning.")
+	return nil
 }
 
 //stubbing out heapsort algorithm's function call
@@ -63,6 +67,13 @@ func bubblesort(uintarray []int) (err error) {
 	return nil
 }
 
+func builtInSort(uintarray []int) (err error) {
+	sort.Slice(uintarray, func(i, j int) bool {
+		return uintarray[i] < uintarray[j]
+	})
+	return
+}
+
 func arrayprinter(sliceint []int, arrayname string) (err error) {
 	fmt.Printf("\nPrinting values for %s:\n", arrayname)
 	for i := range sliceint {
@@ -74,10 +85,10 @@ func arrayprinter(sliceint []int, arrayname string) (err error) {
 
 func main() {
 	var (
-		intarray, bubbleint, mergeint, quickint, heapint, mergeintthread []int
-		arraysize                                                        int
-		val                                                              int
-		err                                                              error
+		intarray, bubbleint, mergeint, quickint, heapint, mergeintthread, builtInInt []int
+		arraysize                                                                    int
+		val                                                                          int
+		err                                                                          error
 	)
 
 	flag.IntVar(&arraysize, "arraysize", 10, "enter an integer")
@@ -95,12 +106,17 @@ func main() {
 	quickint = append(quickint, intarray...)
 	heapint = append(heapint, intarray...)
 	mergeintthread = append(mergeintthread, intarray...)
+	builtInInt = append(builtInInt, intarray...)
 
 	if bubblesort(bubbleint); err != nil {
 		fmt.Printf("Error sorting with bubble sort. Error msg: %v\n", err)
 	}
 
-	if quicksort(quickint, 0, len(quickint -1)); err != nil {
+	if builtInSort(builtInInt); err != nil {
+		fmt.Printf("Error sorting with sort package's sort. Error msg: %v\n", err)
+	}
+
+	if quicksort(quickint, 0, len(quickint)-1); err != nil {
 		fmt.Printf("Error sorting with quicksort. Error msg: %v\n", err)
 	}
 
@@ -110,6 +126,7 @@ func main() {
 
 	arrayprinter(intarray, "intarray")
 	arrayprinter(bubbleint, "bubbleint")
+	arrayprinter(builtInInt, "builtInInt")
 	arrayprinter(mergeint, "mergeint")
 	arrayprinter(quickint, "quickint")
 	arrayprinter(mergeintthread, "mergeintthread")

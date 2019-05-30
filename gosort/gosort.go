@@ -147,19 +147,23 @@ func arrayprinter(sliceint []int, arrayname string) (err error) {
 	return nil
 }
 
+func createArray() (intarray []int) {
+	for i := 0; i < arraysize; i++ {
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		val := r.Intn(1000)
+		intarray = append(intarray, val)
+	}
+	return intarray
+}
+
 func main() {
 	var (
 		intarray, bubbleint, mergeint, quickint, heapint, mergeintthread, builtInInt []int
-		val                                                                          int
 	)
 
 	flag.Parse()
 
-	for i := 0; i < arraysize; i++ {
-		r := rand.New(rand.NewSource(time.Now().UnixNano()))
-		val = r.Intn(1000)
-		intarray = append(intarray, val)
-	}
+	intarray = createArray()
 
 	bubbleint = append(bubbleint, intarray...)
 	mergeint = append(mergeint, intarray...)

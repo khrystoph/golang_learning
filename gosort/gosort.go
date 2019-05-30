@@ -27,6 +27,7 @@ func DeepCopy(vals []int) []int {
 	return tmp
 }
 
+//mergesort recursively divides each array in half and sorts the smallest sizes, then merges them back after returning.
 func mergesort(uintarray []int) {
 
 	if len(uintarray) > 1 {
@@ -73,7 +74,7 @@ func tmergesort(uintarray []int) (err error) {
 	return nil
 }
 
-//stubbing out quicksort algorithm's function call
+//quicksort algorithm uses pivot value for divide and conquer to sort smaller arrays and put back together sorted
 func quicksort(uintarray []int) {
 
 	if len(uintarray) > 1 {
@@ -96,7 +97,6 @@ func quicksort(uintarray []int) {
 		quicksort(largerItems)
 
 		var merged = append(append(append([]int{}, smallerItems...), []int{uintarray[pivotIndex]}...), largerItems...)
-		//merged := MergeLists(smaller_items, items[pivot_index], larger_items)
 
 		for j := 0; j < len(uintarray); j++ {
 			uintarray[j] = merged[j]
@@ -113,7 +113,7 @@ func heapsort(uintarray []int) (err error) {
 }
 
 //Bubblesort. See Readme for more info.
-func bubblesort(uintarray []int) (err error) {
+func bubblesort(uintarray []int) {
 	var (
 		intlen  = len(uintarray)
 		swapped = true
@@ -128,10 +128,10 @@ func bubblesort(uintarray []int) (err error) {
 		}
 	}
 
-	return nil
+	return
 }
 
-func builtInSort(uintarray []int) (err error) {
+func builtInSort(uintarray []int) {
 	sort.Slice(uintarray, func(i, j int) bool {
 		return uintarray[i] < uintarray[j]
 	})
@@ -151,7 +151,6 @@ func main() {
 	var (
 		intarray, bubbleint, mergeint, quickint, heapint, mergeintthread, builtInInt []int
 		val                                                                          int
-		err                                                                          error
 	)
 
 	flag.Parse()
@@ -169,14 +168,8 @@ func main() {
 	mergeintthread = append(mergeintthread, intarray...)
 	builtInInt = append(builtInInt, intarray...)
 
-	if bubblesort(bubbleint); err != nil {
-		fmt.Printf("Error sorting with bubble sort. Error msg: %v\n", err)
-	}
-
-	if builtInSort(builtInInt); err != nil {
-		fmt.Printf("Error sorting with sort package's sort. Error msg: %v\n", err)
-	}
-
+	bubblesort(bubbleint)
+	builtInSort(builtInInt)
 	quicksort(quickint)
 	mergesort(mergeint)
 

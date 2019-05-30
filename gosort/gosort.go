@@ -172,10 +172,7 @@ func main() {
 		fmt.Printf("Error sorting with sort package's sort. Error msg: %v\n", err)
 	}
 
-	if quicksort(quickint); err != nil {
-		fmt.Printf("Error sorting with quicksort. Error msg: %v\n", err)
-	}
-
+	quicksort(quickint)
 	mergesort(mergeint)
 
 	fmt.Printf("Pointers to arrays:\nintarray:%p\nbubbleint:%p\nmergeint:%p\n"+

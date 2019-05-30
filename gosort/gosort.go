@@ -1,5 +1,4 @@
 //sort algorithms in go
-
 package main
 
 import (
@@ -10,34 +9,93 @@ import (
 	"time"
 )
 
-/*stub out single-threaded mergesort algorithm's function call.
-See Readme for info about this Sorting algorithm.
-*/
-func mergesort(uintarray []int) (err error) {
-	fmt.Printf("entering mergesort.")
-	return nil
+//NADA is used in mergesort as a sanity check to check if we should perform specific actions during sorting
+const NADA int = -1
+
+//DeepCopy is a helper function for mergesort to copy the slices created by recursion to a new slice
+func DeepCopy(vals []int) []int {
+	tmp := make([]int, len(vals))
+	copy(tmp, vals)
+	return tmp
 }
 
-/*stub out threaded mergesort algorithms's function call.
-See the readme for more info on tmergesort.
-*/
+func mergesort(uintarray []int) {
+
+	if len(uintarray) > 1 {
+		mid := len(uintarray) / 2
+		left := DeepCopy(uintarray[0:mid])
+		right := DeepCopy(uintarray[mid:])
+
+		mergesort(left)
+		mergesort(right)
+
+		l := 0
+		r := 0
+
+		for i := 0; i < len(uintarray); i++ {
+
+			lval := NADA
+			rval := NADA
+
+			if l < len(left) {
+				lval = left[l]
+			}
+
+			if r < len(right) {
+				rval = right[r]
+			}
+
+			if (lval != NADA && rval != NADA && lval < rval) || rval == NADA {
+				uintarray[i] = lval
+				l++
+			} else if (lval != NADA && rval != NADA && lval >= rval) || lval == NADA {
+				uintarray[i] = rval
+				r++
+			}
+
+		}
+	}
+
+}
+
+//stub out threaded mergesort algorithms's function call.
+//See the readme for more info on tmergesort.
 func tmergesort(uintarray []int) (err error) {
 	fmt.Printf("entering threaded mergesort.")
 	return nil
 }
 
 //stubbing out quicksort algorithm's function call
-func quicksort(uintarray []int, lo int, hi int) (err error) {
-	if uintarray[lo] < uintarray[hi] {
+func quicksort(uintarray []int) {
+
+	if len(uintarray) > 1 {
+		pivotIndex := len(uintarray) / 2
+		var smallerItems = []int{}
+		var largerItems = []int{}
+
+		for i := range uintarray {
+			val := uintarray[i]
+			if i != pivotIndex {
+				if val < uintarray[pivotIndex] {
+					smallerItems = append(smallerItems, val)
+				} else {
+					largerItems = append(largerItems, val)
+				}
+			}
+		}
+
+		quicksort(smallerItems)
+		quicksort(largerItems)
+
+		var merged = append(append(append([]int{}, smallerItems...), []int{uintarray[pivotIndex]}...), largerItems...)
+		//merged := MergeLists(smaller_items, items[pivot_index], larger_items)
+
+		for j := 0; j < len(uintarray); j++ {
+			uintarray[j] = merged[j]
+		}
 
 	}
-	return nil
-}
 
-//partitioning function for quicksort algorithm
-func quicksortpart(uintarray []int, lo int, hi int) (err error) {
-	fmt.Printf("entering quicksort partitioning.")
-	return nil
 }
 
 //stubbing out heapsort algorithm's function call
@@ -46,9 +104,7 @@ func heapsort(uintarray []int) (err error) {
 	return nil
 }
 
-/*
-Bubblesort. See Readme for more info.
-*/
+//Bubblesort. See Readme for more info.
 func bubblesort(uintarray []int) (err error) {
 	var (
 		intlen  = len(uintarray)
@@ -116,9 +172,11 @@ func main() {
 		fmt.Printf("Error sorting with sort package's sort. Error msg: %v\n", err)
 	}
 
-	if quicksort(quickint, 0, len(quickint)-1); err != nil {
+	if quicksort(quickint); err != nil {
 		fmt.Printf("Error sorting with quicksort. Error msg: %v\n", err)
 	}
+
+	mergesort(mergeint)
 
 	fmt.Printf("Pointers to arrays:\nintarray:%p\nbubbleint:%p\nmergeint:%p\n"+
 		"quickint:%p\nheapint:%p\nmergeintthread:%p", intarray, bubbleint, mergeint,

@@ -9,6 +9,14 @@ import (
 	"time"
 )
 
+func init() {
+	flag.IntVar(&arraysize, "arraysize", 10, "enter an integer")
+}
+
+var (
+	arraysize int
+)
+
 //NADA is used in mergesort as a sanity check to check if we should perform specific actions during sorting
 const NADA int = -1
 
@@ -142,12 +150,9 @@ func arrayprinter(sliceint []int, arrayname string) (err error) {
 func main() {
 	var (
 		intarray, bubbleint, mergeint, quickint, heapint, mergeintthread, builtInInt []int
-		arraysize                                                                    int
 		val                                                                          int
 		err                                                                          error
 	)
-
-	flag.IntVar(&arraysize, "arraysize", 10, "enter an integer")
 
 	flag.Parse()
 

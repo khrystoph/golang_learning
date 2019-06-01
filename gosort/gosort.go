@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"runtime"
 	"sort"
+	"sync"
 	"time"
 )
 
@@ -266,6 +267,49 @@ func bubblesort(uintarray []int64) {
 	return
 }
 
+//shellsort is an unstable algo, which should yield some variance in the test results.
+func shellsort(uintarray []int64) {
+	var (
+		n    = len(uintarray)
+		gaps = []int{1}
+		k    = 1
+	)
+
+	for {
+		gap := element(2, k) + 1
+		if gap > n-1 {
+			break
+		}
+		gaps = append([]int{gap}, gaps...)
+		k++
+	}
+
+	for _, gap := range gaps {
+		for i := gap; i < n; i += gap {
+			j := i
+			for j > 0 {
+				if uintarray[j-gap] > uintarray[j] {
+					uintarray[j-gap], uintarray[j] = uintarray[j], uintarray[j-gap]
+				}
+				j = j - gap
+			}
+		}
+	}
+}
+
+//element is a helper function for shellsort
+func element(a, b int) int {
+	e := 1
+	for b > 0 {
+		if b&1 != 0 {
+			e *= a
+		}
+		b >>= 1
+		a *= a
+	}
+	return e
+}
+
 //builtInSort is leveraging the package sort to do an efficient and stable sort
 func builtInSort(uintarray []int64) {
 	sort.Slice(uintarray, func(i, j int) bool {
@@ -284,11 +328,17 @@ func arrayprinter(sliceint []int64, arrayname string) (err error) {
 }
 
 func createArray(arraysize int, maxSize int64) (intarray []int64) {
+	var wg sync.WaitGroup
 	for i := 0; i < arraysize; i++ {
-		r := rand.New(rand.NewSource(time.Now().UnixNano()))
-		val := r.Int63n(maxSize)
-		intarray = append(intarray, val)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			val := r.Int63n(maxSize)
+			intarray = append(intarray, val)
+		}()
 	}
+	wg.Wait()
 	return intarray
 }
 
@@ -299,9 +349,9 @@ func routineTimer(start time.Time, delta *time.Duration) {
 
 func main() {
 	var (
-		bubbleint, mergeint, quickint, heapint, mergeintthread, builtInInt, tquickSortInt                                  []int64
-		bubblesortTimer, builtInSortTimer, quicksortTimer, mergesortTimer, tmergesortTimer, heapsortTimer, tquickSortTimer time.Duration
-		bubbleSortChan                                                                                                     chan string
+		bubbleint, mergeint, quickint, heapint, mergeintthread, builtInInt, tquickSortInt, shellSortInt                                    []int64
+		bubblesortTimer, builtInSortTimer, quicksortTimer, mergesortTimer, tmergesortTimer, heapsortTimer, tquickSortTimer, shellSortTimer time.Duration
+		bubbleSortChan                                                                                                                     chan string
 	)
 	flag.Parse()
 	runtime.GOMAXPROCS(numcpu)
@@ -317,8 +367,10 @@ func main() {
 	heapint = append(heapint, intarray...)
 	mergeintthread = append(mergeintthread, intarray...)
 	builtInInt = append(builtInInt, intarray...)
+	shellSortInt = append(shellSortInt, intarray...)
 	fmt.Println("time to copy array to subsequent arrays: ", time.Since(copyStartTime))
 
+	shellSortChan := make(chan string)
 	builtInSortChan := make(chan string)
 	quickSortChan := make(chan string)
 	mergeSortChan := make(chan string)
@@ -347,10 +399,17 @@ func main() {
 		heapsort(somearray)
 		heapSortChan <- "Finished heapsort."
 	}(heapint)
+	go func() {
+		start := time.Now()
+		defer routineTimer(start, &shellSortTimer)
+		shellsort(shellSortInt)
+		shellSortChan <- "Finished shellsort."
+	}()
 	fmt.Println(<-quickSortChan)
 	fmt.Println(<-mergeSortChan)
 	fmt.Println(<-heapSortChan)
 	fmt.Println(<-builtInSortChan)
+	fmt.Println(<-shellSortChan)
 
 	testmergestring := make(chan string)
 	rchan := make(chan []int64)
@@ -397,6 +456,7 @@ func main() {
 	fmt.Println("Heapsort finished after: ", heapsortTimer)
 	fmt.Println("Mergesort finished after: ", mergesortTimer)
 	fmt.Println("Built-in sort finished after: ", builtInSortTimer)
+	fmt.Println("Shellsort finished after: ", shellSortTimer)
 	fmt.Println("Threaded Mergesort finished after: ", tmergesortTimer)
 	fmt.Println("Threaded Quicksort finished after: ", tquickSortTimer)
 
@@ -407,5 +467,6 @@ func main() {
 	close(mergeSortChan)
 	close(heapSortChan)
 	close(builtInSortChan)
+	close(shellSortChan)
 	close(rchan)
 }

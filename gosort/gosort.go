@@ -106,6 +106,7 @@ func tmergesort(uintarray []int64, r chan []int64) {
 }
 
 //merge is a function that actually performs the merge of two arrays for the mergesort algorithm.
+/*
 func merge(luintarray []int64, ruintarray []int64) (result []int64) {
 	result = make([]int64, len(ruintarray)+len(luintarray))
 	leftIndex, rightIndex := 0, 0
@@ -126,8 +127,32 @@ func merge(luintarray []int64, ruintarray []int64) (result []int64) {
 			rightIndex++
 		}
 	}
-
+	fmt.Println(result)
 	return
+}
+*/
+
+func merge(left, right []int64) []int64 {
+
+	size, i, j := len(left)+len(right), 0, 0
+	slice := make([]int64, size, size)
+
+	for k := 0; k < size; k++ {
+		if i > len(left)-1 && j <= len(right)-1 {
+			slice[k] = right[j]
+			j++
+		} else if j > len(right)-1 && i <= len(left)-1 {
+			slice[k] = left[i]
+			i++
+		} else if left[i] < right[j] {
+			slice[k] = left[i]
+			i++
+		} else {
+			slice[k] = right[j]
+			j++
+		}
+	}
+	return slice
 }
 
 //quicksort algorithm uses pivot value for divide and conquer to sort smaller arrays and put back together sorted
@@ -313,6 +338,8 @@ func main() {
 		testmergestring <- "Finished with merge."
 	}()
 	testmergearray = <-rchan
+	fmt.Println(<-testmergestring)
+	close(testmergestring)
 
 	if printArray {
 		arrayprinter(intarray, "intarray")
@@ -323,5 +350,5 @@ func main() {
 		arrayprinter(heapint, "heapint")
 		arrayprinter(testmergearray, "mergeintthread")
 	}
-	close(testmergestring)
+	close(rchan)
 }

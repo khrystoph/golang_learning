@@ -277,7 +277,11 @@ func main() {
 	mergeintthread = append(mergeintthread, intarray...)
 	builtInInt = append(builtInInt, intarray...)
 
-	wg.Add(5)
+	wg.Add(2)
+	builtInSortChan := make(chan string)
+	quickSortChan := make(chan string)
+	mergeSortChan := make(chan string)
+	heapSortChan := make(chan string)
 	go func(somearray []int64) {
 		start := time.Now()
 		defer routineTimer(start, &bubblesortTimer)
@@ -290,29 +294,35 @@ func main() {
 		defer routineTimer(start, &builtInSortTimer)
 		defer wg.Done()
 		builtInSort(somearray)
-		fmt.Println("Finish Built-in sort.")
+		builtInSortChan <- "Finish Built-in sort."
 	}(builtInInt)
 	go func(somearray []int64) {
 		start := time.Now()
 		defer routineTimer(start, &quicksortTimer)
-		defer wg.Done()
 		quicksort(somearray)
-		fmt.Println("Finished Quicksort.")
+		quickSortChan <- "Finished Quicksort."
 	}(quickint)
 	go func(somearray []int64) {
 		start := time.Now()
 		defer routineTimer(start, &mergesortTimer)
 		defer wg.Done()
 		mergesort(somearray)
-		fmt.Println("Finished mergesort.")
+		mergeSortChan <- "Finished mergesort."
 	}(mergeint)
 	go func(somearray []int64) {
 		start := time.Now()
 		defer routineTimer(start, &heapsortTimer)
 		defer wg.Done()
 		heapsort(somearray)
-		fmt.Println("Finished heapsort.")
+		heapSortChan <- "Finished heapsort."
 	}(heapint)
+	fmt.Println(<-quickSortChan)
+	fmt.Println(<-mergeSortChan)
+	fmt.Println(<-heapSortChan)
+	close(quickSortChan)
+	close(mergeSortChan)
+	close(heapSortChan)
+
 	wg.Wait()
 
 	testmergestring := make(chan string)

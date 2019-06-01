@@ -264,7 +264,6 @@ func main() {
 	)
 	flag.Parse()
 	runtime.GOMAXPROCS(4)
-	msgchannel := make(chan string)
 
 	intarray := createArray(arraysize, maxIntSize)
 
@@ -278,7 +277,6 @@ func main() {
 	go func(somearray []int64, timer *time.Duration) {
 		defer routineTimer(time.Now(), timer)
 		bubblesort(somearray)
-		msgchannel <- "Finished with bubblesort."
 	}(bubbleint, &bubblesortTimer)
 	go func(somearray []int64, timer *time.Duration) {
 		defer routineTimer(time.Now(), timer)
@@ -313,7 +311,6 @@ func main() {
 		arrayprinter(testmergearray, "mergeintthread")
 	}
 
-	close(msgchannel)
 	fmt.Println("Bubblesort finished after: ", bubblesortTimer)
 	fmt.Println("Quicksort finished after: ", quicksortTimer)
 	fmt.Println("Heapsort finished after: ", heapsortTimer)

@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"runtime"
 	"sort"
-	"sync"
 	"time"
 )
 
@@ -16,12 +15,13 @@ func init() {
 	flag.Int64Var(&maxIntSize, "max", 1000, "enter an integer")
 	flag.BoolVar(&printArray, "p", false, "tells the program to print the arrays at the end, but before the times.")
 	flag.IntVar(&numcpu, "cpu", 4, "input the max number of CPUs to run on per runtime's MAXCPROCS function.")
+	flag.BoolVar(&noBubbleSort, "nobs", false, "use this flag if you don't want to run BubbleSort")
 }
 
 var (
-	arraysize, numcpu int
-	maxIntSize        int64
-	printArray        bool
+	arraysize, numcpu        int
+	maxIntSize               int64
+	printArray, noBubbleSort bool
 )
 
 //NADA is used in mergesort as a sanity check to check if we should perform specific actions during sorting
@@ -301,7 +301,7 @@ func main() {
 	var (
 		bubbleint, mergeint, quickint, heapint, mergeintthread, builtInInt, tquickSortInt                                  []int64
 		bubblesortTimer, builtInSortTimer, quicksortTimer, mergesortTimer, tmergesortTimer, heapsortTimer, tquickSortTimer time.Duration
-		wg                                                                                                                 sync.WaitGroup
+		bubbleSortChan                                                                                                     chan string
 	)
 	flag.Parse()
 	runtime.GOMAXPROCS(numcpu)
@@ -315,18 +315,10 @@ func main() {
 	mergeintthread = append(mergeintthread, intarray...)
 	builtInInt = append(builtInInt, intarray...)
 
-	wg.Add(1)
 	builtInSortChan := make(chan string)
 	quickSortChan := make(chan string)
 	mergeSortChan := make(chan string)
 	heapSortChan := make(chan string)
-	go func(somearray []int64) {
-		start := time.Now()
-		defer routineTimer(start, &bubblesortTimer)
-		defer wg.Done()
-		bubblesort(somearray)
-		fmt.Println("Finished Bubblesort.")
-	}(bubbleint)
 	go func(somearray []int64) {
 		start := time.Now()
 		defer routineTimer(start, &builtInSortTimer)
@@ -379,11 +371,24 @@ func main() {
 	fmt.Println(<-tquickSortChan)
 	close(tquickSortChan)
 
+	if !noBubbleSort {
+		bubbleSortChan = make(chan string)
+		go func(somearray []int64) {
+			start := time.Now()
+			defer routineTimer(start, &bubblesortTimer)
+			bubblesort(somearray)
+			bubbleSortChan <- "Finished Bubblesort."
+		}(bubbleint)
+		fmt.Println(<-bubbleSortChan)
+	}
+
 	if printArray {
 		arrayprinter(testmergearray, "mergeintthread")
 	}
 
-	fmt.Println("Bubblesort finished after: ", bubblesortTimer)
+	if !noBubbleSort {
+		fmt.Println("Bubblesort finished after: ", bubblesortTimer)
+	}
 	fmt.Println("Quicksort finished after: ", quicksortTimer)
 	fmt.Println("Heapsort finished after: ", heapsortTimer)
 	fmt.Println("Mergesort finished after: ", mergesortTimer)
@@ -391,10 +396,12 @@ func main() {
 	fmt.Println("Threaded Mergesort finished after: ", tmergesortTimer)
 	fmt.Println("Threaded Quicksort finished after: ", tquickSortTimer)
 
+	if !noBubbleSort {
+		close(bubbleSortChan)
+	}
 	close(quickSortChan)
 	close(mergeSortChan)
 	close(heapSortChan)
 	close(builtInSortChan)
-	wg.Wait()
 	close(rchan)
 }

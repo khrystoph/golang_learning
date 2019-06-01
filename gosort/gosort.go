@@ -15,12 +15,13 @@ func init() {
 	flag.IntVar(&arraysize, "arraysize", 10, "enter an integer")
 	flag.Int64Var(&maxIntSize, "max", 1000, "enter an integer")
 	flag.BoolVar(&printArray, "p", false, "tells the program to print the arrays at the end, but before the times.")
+	flag.IntVar(&numcpu, "cpu", 4, "input the max number of CPUs to run on per runtime's MAXCPROCS function.")
 }
 
 var (
-	arraysize  int
-	maxIntSize int64
-	printArray bool
+	arraysize, numcpu int
+	maxIntSize        int64
+	printArray        bool
 )
 
 //NADA is used in mergesort as a sanity check to check if we should perform specific actions during sorting
@@ -265,7 +266,7 @@ func main() {
 		bswg, biwg, qswg, mswg, hswg                                                                      sync.WaitGroup
 	)
 	flag.Parse()
-	runtime.GOMAXPROCS(4)
+	runtime.GOMAXPROCS(numcpu)
 
 	intarray := createArray(arraysize, maxIntSize)
 

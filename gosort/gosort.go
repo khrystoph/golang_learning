@@ -315,7 +315,7 @@ func main() {
 	mergeintthread = append(mergeintthread, intarray...)
 	builtInInt = append(builtInInt, intarray...)
 
-	wg.Add(2)
+	wg.Add(1)
 	builtInSortChan := make(chan string)
 	quickSortChan := make(chan string)
 	mergeSortChan := make(chan string)
@@ -355,11 +355,6 @@ func main() {
 	fmt.Println(<-mergeSortChan)
 	fmt.Println(<-heapSortChan)
 	fmt.Println(<-builtInSortChan)
-	close(quickSortChan)
-	close(mergeSortChan)
-	close(heapSortChan)
-	close(builtInSortChan)
-	wg.Wait()
 
 	testmergestring := make(chan string)
 	rchan := make(chan []int64)
@@ -396,5 +391,10 @@ func main() {
 	fmt.Println("Threaded Mergesort finished after: ", tmergesortTimer)
 	fmt.Println("Threaded Quicksort finished after: ", tquickSortTimer)
 
+	close(quickSortChan)
+	close(mergeSortChan)
+	close(heapSortChan)
+	close(builtInSortChan)
+	wg.Wait()
 	close(rchan)
 }

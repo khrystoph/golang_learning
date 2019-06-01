@@ -106,32 +106,6 @@ func tmergesort(uintarray []int64, r chan []int64) {
 }
 
 //merge is a function that actually performs the merge of two arrays for the mergesort algorithm.
-/*
-func merge(luintarray []int64, ruintarray []int64) (result []int64) {
-	result = make([]int64, len(ruintarray)+len(luintarray))
-	leftIndex, rightIndex := 0, 0
-
-	for i := 0; i < cap(result); i++ {
-		switch {
-		case leftIndex >= len(luintarray):
-			result[i] = ruintarray[rightIndex]
-			rightIndex++
-		case rightIndex >= len(ruintarray):
-			result[i] = luintarray[rightIndex]
-			leftIndex++
-		case luintarray[leftIndex] < ruintarray[rightIndex]:
-			result[i] = luintarray[leftIndex]
-			leftIndex++
-		default:
-			result[i] = ruintarray[rightIndex]
-			rightIndex++
-		}
-	}
-	fmt.Println(result)
-	return
-}
-*/
-
 func merge(left, right []int64) []int64 {
 
 	size, i, j := len(left)+len(right), 0, 0
@@ -335,7 +309,7 @@ func main() {
 	var testmergearray []int64
 	go func() {
 		tmergesort(mergeintthread, rchan)
-		testmergestring <- "Finished with merge."
+		testmergestring <- "Finished with Threaded Merge Sort."
 	}()
 	testmergearray = <-rchan
 	fmt.Println(<-testmergestring)

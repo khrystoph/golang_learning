@@ -394,6 +394,7 @@ func main() {
 	fmt.Println("Mergesort finished after: ", mergesortTimer)
 	fmt.Println("Built-in sort finished after: ", builtInSortTimer)
 	fmt.Println("Threaded Mergesort finished after: ", tmergesortTimer)
+	fmt.Println("Threaded Quicksort finished after: ", tquickSortTimer)
 
 	close(rchan)
 }

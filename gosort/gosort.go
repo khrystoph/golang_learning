@@ -131,6 +131,44 @@ func merge(left, right []int64) []int64 {
 	return slice
 }
 
+func tquicksort(uintarray []int64) {
+
+	if len(uintarray) > 1 {
+		pivotIndex := len(uintarray) / 2
+		var smallerItems = []int64{}
+		var largerItems = []int64{}
+
+		for i := range uintarray {
+			val := uintarray[i]
+			if i != pivotIndex {
+				if val < uintarray[pivotIndex] {
+					smallerItems = append(smallerItems, val)
+				} else {
+					largerItems = append(largerItems, val)
+				}
+			}
+		}
+
+		smallerChan := make(chan string)
+		go func() {
+			tquicksort(smallerItems)
+			smallerChan <- "smaller items finished."
+		}()
+		go func() {
+			tquicksort(largerItems)
+			smallerChan <- "larger items finished."
+		}()
+
+		var merged = append(append(append([]int64{}, smallerItems...), []int64{uintarray[pivotIndex]}...), largerItems...)
+
+		for j := 0; j < len(uintarray); j++ {
+			uintarray[j] = merged[j]
+		}
+
+	}
+	return
+}
+
 //quicksort algorithm uses pivot value for divide and conquer to sort smaller arrays and put back together sorted
 func quicksort(uintarray []int64) {
 
@@ -261,9 +299,9 @@ func routineTimer(start time.Time, delta *time.Duration) {
 
 func main() {
 	var (
-		bubbleint, mergeint, quickint, heapint, mergeintthread, builtInInt                                []int64
-		bubblesortTimer, builtInSortTimer, quicksortTimer, mergesortTimer, tmergesortTimer, heapsortTimer time.Duration
-		wg                                                                                                sync.WaitGroup
+		bubbleint, mergeint, quickint, heapint, mergeintthread, builtInInt, tquickSortInt                                  []int64
+		bubblesortTimer, builtInSortTimer, quicksortTimer, mergesortTimer, tmergesortTimer, heapsortTimer, tquickSortTimer time.Duration
+		wg                                                                                                                 sync.WaitGroup
 	)
 	flag.Parse()
 	runtime.GOMAXPROCS(numcpu)
@@ -292,7 +330,6 @@ func main() {
 	go func(somearray []int64) {
 		start := time.Now()
 		defer routineTimer(start, &builtInSortTimer)
-		defer wg.Done()
 		builtInSort(somearray)
 		builtInSortChan <- "Finish Built-in sort."
 	}(builtInInt)
@@ -305,24 +342,23 @@ func main() {
 	go func(somearray []int64) {
 		start := time.Now()
 		defer routineTimer(start, &mergesortTimer)
-		defer wg.Done()
 		mergesort(somearray)
 		mergeSortChan <- "Finished mergesort."
 	}(mergeint)
 	go func(somearray []int64) {
 		start := time.Now()
 		defer routineTimer(start, &heapsortTimer)
-		defer wg.Done()
 		heapsort(somearray)
 		heapSortChan <- "Finished heapsort."
 	}(heapint)
 	fmt.Println(<-quickSortChan)
 	fmt.Println(<-mergeSortChan)
 	fmt.Println(<-heapSortChan)
+	fmt.Println(<-builtInSortChan)
 	close(quickSortChan)
 	close(mergeSortChan)
 	close(heapSortChan)
-
+	close(builtInSortChan)
 	wg.Wait()
 
 	testmergestring := make(chan string)
@@ -332,11 +368,21 @@ func main() {
 		start := time.Now()
 		defer routineTimer(start, &tmergesortTimer)
 		tmergesort(mergeintthread, rchan)
-		testmergestring <- "Finished with Threaded Merge Sort."
+		testmergestring <- "Finished Threaded Merge Sort."
 	}()
 	testmergearray = <-rchan
 	fmt.Println(<-testmergestring)
 	close(testmergestring)
+
+	tquickSortChan := make(chan string)
+	go func() {
+		start := time.Now()
+		defer routineTimer(start, &tquickSortTimer)
+		tquicksort(tquickSortInt)
+		tquickSortChan <- "Finished Threaded Quicksort."
+	}()
+	fmt.Println(<-tquickSortChan)
+	close(tquickSortChan)
 
 	if printArray {
 		arrayprinter(testmergearray, "mergeintthread")

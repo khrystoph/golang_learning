@@ -237,11 +237,11 @@ func builtInSort(uintarray []int64) {
 }
 
 func arrayprinter(sliceint []int64, arrayname string) (err error) {
-	fmt.Printf("\nPrinting values for %s:\n", arrayname)
+	fmt.Printf("\nPrinting values for %s:\n[", arrayname)
 	for i := range sliceint {
-		fmt.Printf("Value in %s[%d] is %v\n", arrayname, i, sliceint[i])
+		fmt.Printf("%v ", sliceint[i])
 	}
-	fmt.Printf("The address of pointer slicepointer is %p\n", sliceint)
+	fmt.Printf("]\nThe address of pointer slicepointer is %p\n", sliceint)
 	return nil
 }
 
@@ -263,7 +263,7 @@ func main() {
 	var (
 		bubbleint, mergeint, quickint, heapint, mergeintthread, builtInInt                                []int64
 		bubblesortTimer, builtInSortTimer, quicksortTimer, mergesortTimer, tmergesortTimer, heapsortTimer time.Duration
-		bswg, biwg, qswg, mswg, hswg                                                                      sync.WaitGroup
+		wg                                                                                                sync.WaitGroup
 	)
 	flag.Parse()
 	runtime.GOMAXPROCS(numcpu)
@@ -277,60 +277,53 @@ func main() {
 	mergeintthread = append(mergeintthread, intarray...)
 	builtInInt = append(builtInInt, intarray...)
 
-	bswg.Add(1)
-	biwg.Add(1)
-	qswg.Add(1)
-	mswg.Add(1)
-	hswg.Add(1)
+	wg.Add(5)
 	go func(somearray []int64) {
 		start := time.Now()
 		defer routineTimer(start, &bubblesortTimer)
-		defer bswg.Done()
+		defer wg.Done()
 		bubblesort(somearray)
 		fmt.Println("Finished Bubblesort.")
 	}(bubbleint)
 	go func(somearray []int64) {
 		start := time.Now()
 		defer routineTimer(start, &builtInSortTimer)
-		defer biwg.Done()
+		defer wg.Done()
 		builtInSort(somearray)
 		fmt.Println("Finish Built-in sort.")
 	}(builtInInt)
 	go func(somearray []int64) {
 		start := time.Now()
 		defer routineTimer(start, &quicksortTimer)
-		defer qswg.Done()
+		defer wg.Done()
 		quicksort(somearray)
 		fmt.Println("Finished Quicksort.")
 	}(quickint)
 	go func(somearray []int64) {
 		start := time.Now()
 		defer routineTimer(start, &mergesortTimer)
-		defer mswg.Done()
+		defer wg.Done()
 		mergesort(somearray)
 		fmt.Println("Finished mergesort.")
 	}(mergeint)
 	go func(somearray []int64) {
 		start := time.Now()
 		defer routineTimer(start, &heapsortTimer)
-		defer hswg.Done()
+		defer wg.Done()
 		heapsort(somearray)
 		fmt.Println("Finished heapsort.")
 	}(heapint)
-	bswg.Wait()
-	biwg.Wait()
-	qswg.Wait()
-	mswg.Wait()
-	hswg.Wait()
+	wg.Wait()
 
 	testmergestring := make(chan string)
 	rchan := make(chan []int64)
 	var testmergearray []int64
-	go func(timer *time.Duration) {
-		defer routineTimer(time.Now(), timer)
+	go func() {
+		start := time.Now()
+		defer routineTimer(start, &tmergesortTimer)
 		tmergesort(mergeintthread, rchan)
 		testmergestring <- "Finished with Threaded Merge Sort."
-	}(&tmergesortTimer)
+	}()
 	testmergearray = <-rchan
 	fmt.Println(<-testmergestring)
 	close(testmergestring)

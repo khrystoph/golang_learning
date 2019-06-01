@@ -306,14 +306,18 @@ func main() {
 	flag.Parse()
 	runtime.GOMAXPROCS(numcpu)
 
+	arrayCreateStart := time.Now()
 	intarray := createArray(arraysize, maxIntSize)
+	fmt.Println("time to create array: ", time.Since(arrayCreateStart))
 
+	copyStartTime := time.Now()
 	bubbleint = append(bubbleint, intarray...)
 	mergeint = append(mergeint, intarray...)
 	quickint = append(quickint, intarray...)
 	heapint = append(heapint, intarray...)
 	mergeintthread = append(mergeintthread, intarray...)
 	builtInInt = append(builtInInt, intarray...)
+	fmt.Println("time to copy array to subsequent arrays: ", time.Since(copyStartTime))
 
 	builtInSortChan := make(chan string)
 	quickSortChan := make(chan string)
@@ -323,7 +327,7 @@ func main() {
 		start := time.Now()
 		defer routineTimer(start, &builtInSortTimer)
 		builtInSort(somearray)
-		builtInSortChan <- "Finish Built-in sort."
+		builtInSortChan <- "Finished Built-in sort."
 	}(builtInInt)
 	go func(somearray []int64) {
 		start := time.Now()

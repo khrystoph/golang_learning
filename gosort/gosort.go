@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"runtime"
 	"sort"
-	"sync"
 	"time"
 )
 
@@ -261,14 +260,11 @@ func routineTimer(start time.Time, delta *time.Duration) {
 func main() {
 	var (
 		bubbleint, mergeint, quickint, heapint, mergeintthread, builtInInt                                []int64
-		wg                                                                                                sync.WaitGroup
 		bubblesortTimer, builtInSortTimer, quicksortTimer, mergesortTimer, tmergesortTimer, heapsortTimer time.Duration
 	)
-	runtime.GOMAXPROCS(4)
-
-	messages := make(chan string, 5)
-
 	flag.Parse()
+	runtime.GOMAXPROCS(4)
+	msgchannel := make(chan string)
 
 	intarray := createArray(arraysize, maxIntSize)
 
@@ -279,43 +275,27 @@ func main() {
 	mergeintthread = append(mergeintthread, intarray...)
 	builtInInt = append(builtInInt, intarray...)
 
-	wg.Add(THREADCOUNT)
 	go func(somearray []int64, timer *time.Duration) {
-		defer wg.Done()
 		defer routineTimer(time.Now(), timer)
 		bubblesort(somearray)
-		messages <- "Finished with Bubblesort."
+		msgchannel <- "Finished with bubblesort."
 	}(bubbleint, &bubblesortTimer)
 	go func(somearray []int64, timer *time.Duration) {
-		defer wg.Done()
 		defer routineTimer(time.Now(), timer)
 		builtInSort(somearray)
-		messages <- "Finished with Built-in Sort."
 	}(builtInInt, &builtInSortTimer)
 	go func(somearray []int64, timer *time.Duration) {
-		defer wg.Done()
 		defer routineTimer(time.Now(), timer)
 		quicksort(somearray)
-		messages <- "Finished with QuickSort."
 	}(quickint, &quicksortTimer)
 	go func(somearray []int64, timer *time.Duration) {
-		defer wg.Done()
 		defer routineTimer(time.Now(), timer)
 		mergesort(somearray)
-		messages <- "Finished with MergeSort."
 	}(mergeint, &mergesortTimer)
 	go func(somearray []int64, timer *time.Duration) {
-		defer wg.Done()
 		defer routineTimer(time.Now(), timer)
 		heapsort(somearray)
-		messages <- "Finished with Heapsort."
 	}(heapint, &heapsortTimer)
-	wg.Wait()
-
-	close(messages)
-	for message := range messages {
-		fmt.Println(message)
-	}
 
 	testmergestring := make(chan string)
 	rchan := make(chan []int64)
@@ -330,15 +310,10 @@ func main() {
 	close(testmergestring)
 
 	if printArray {
-		arrayprinter(intarray, "intarray")
-		arrayprinter(bubbleint, "bubbleint")
-		arrayprinter(builtInInt, "builtInInt")
-		arrayprinter(mergeint, "mergeint")
-		arrayprinter(quickint, "quickint")
-		arrayprinter(heapint, "heapint")
 		arrayprinter(testmergearray, "mergeintthread")
 	}
 
+	close(msgchannel)
 	fmt.Println("Bubblesort finished after: ", bubblesortTimer)
 	fmt.Println("Quicksort finished after: ", quicksortTimer)
 	fmt.Println("Heapsort finished after: ", heapsortTimer)

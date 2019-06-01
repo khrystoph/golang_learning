@@ -17,19 +17,17 @@ func init() {
 	flag.BoolVar(&printArray, "p", false, "tells the program to print the arrays at the end, but before the times.")
 	flag.IntVar(&numcpu, "cpu", 4, "input the max number of CPUs to run on per runtime's MAXCPROCS function.")
 	flag.BoolVar(&noBubbleSort, "nobs", false, "use this flag if you don't want to run BubbleSort")
+	flag.BoolVar(&noShellSort, "noss", false, "Setting this flag turns off shell sort algo.")
 }
 
 var (
-	arraysize, numcpu        int
-	maxIntSize               int64
-	printArray, noBubbleSort bool
+	arraysize, numcpu                     int
+	maxIntSize                            int64
+	printArray, noBubbleSort, noShellSort bool
 )
 
 //NADA is used in mergesort as a sanity check to check if we should perform specific actions during sorting
 const NADA int64 = -1
-
-//THREADCOUNT is a constant to make adjusting the number of threads in waitgroup easier
-const THREADCOUNT = 5
 
 //MINLEN is the minimum length needed for goroutines to be effective. If we hit this value, we want to call regular mergesort
 //instead of another go routine so we can maximize our efficiency
@@ -399,17 +397,21 @@ func main() {
 		heapsort(somearray)
 		heapSortChan <- "Finished heapsort."
 	}(heapint)
-	go func() {
-		start := time.Now()
-		defer routineTimer(start, &shellSortTimer)
-		shellsort(shellSortInt)
-		shellSortChan <- "Finished shellsort."
-	}()
+	if !noShellSort {
+		go func() {
+			start := time.Now()
+			defer routineTimer(start, &shellSortTimer)
+			shellsort(shellSortInt)
+			shellSortChan <- "Finished shellsort."
+		}()
+	}
 	fmt.Println(<-quickSortChan)
 	fmt.Println(<-mergeSortChan)
 	fmt.Println(<-heapSortChan)
 	fmt.Println(<-builtInSortChan)
-	fmt.Println(<-shellSortChan)
+	if !noShellSort {
+		fmt.Println(<-shellSortChan)
+	}
 
 	testmergestring := make(chan string)
 	rchan := make(chan []int64)
@@ -456,7 +458,9 @@ func main() {
 	fmt.Println("Heapsort finished after: ", heapsortTimer)
 	fmt.Println("Mergesort finished after: ", mergesortTimer)
 	fmt.Println("Built-in sort finished after: ", builtInSortTimer)
-	fmt.Println("Shellsort finished after: ", shellSortTimer)
+	if !noShellSort {
+		fmt.Println("Shellsort finished after: ", shellSortTimer)
+	}
 	fmt.Println("Threaded Mergesort finished after: ", tmergesortTimer)
 	fmt.Println("Threaded Quicksort finished after: ", tquickSortTimer)
 
@@ -467,6 +471,8 @@ func main() {
 	close(mergeSortChan)
 	close(heapSortChan)
 	close(builtInSortChan)
-	close(shellSortChan)
+	if !noShellSort {
+		close(shellSortChan)
+	}
 	close(rchan)
 }

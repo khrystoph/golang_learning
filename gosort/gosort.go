@@ -1,55 +1,254 @@
 //sort algorithms in go
-
 package main
 
 import (
 	"flag"
 	"fmt"
 	"math/rand"
+	"runtime"
 	"sort"
+	"sync"
 	"time"
 )
 
-/*stub out single-threaded mergesort algorithm's function call.
-See Readme for info about this Sorting algorithm.
-*/
-func mergesort(uintarray []int) (err error) {
-	fmt.Printf("entering mergesort.")
-	return nil
+func init() {
+	flag.IntVar(&arraysize, "arraysize", 10, "enter an integer")
+	flag.Int64Var(&maxIntSize, "max", 1000, "enter an integer")
+	flag.BoolVar(&printArray, "p", false, "tells the program to print the arrays at the end, but before the times.")
+	flag.IntVar(&numcpu, "cpu", 4, "input the max number of CPUs to run on per runtime's MAXCPROCS function.")
+	flag.BoolVar(&noBubbleSort, "nobs", false, "use this flag if you don't want to run BubbleSort")
+	flag.BoolVar(&noShellSort, "noss", false, "Setting this flag turns off shell sort algo.")
 }
 
-/*stub out threaded mergesort algorithms's function call.
-See the readme for more info on tmergesort.
-*/
-func tmergesort(uintarray []int) (err error) {
-	fmt.Printf("entering threaded mergesort.")
-	return nil
+var (
+	arraysize, numcpu                     int
+	maxIntSize                            int64
+	printArray, noBubbleSort, noShellSort bool
+)
+
+//NADA is used in mergesort as a sanity check to check if we should perform specific actions during sorting
+const NADA int64 = -1
+
+//MINLEN is the minimum length needed for goroutines to be effective. If we hit this value, we want to call regular mergesort
+//instead of another go routine so we can maximize our efficiency
+const MINLEN = 1000
+
+//DeepCopy is a helper function for mergesort to copy the slices created by recursion to a new slice
+func DeepCopy(vals []int64) []int64 {
+	tmp := make([]int64, len(vals))
+	copy(tmp, vals)
+	return tmp
 }
 
-//stubbing out quicksort algorithm's function call
-func quicksort(uintarray []int, lo int, hi int) (err error) {
-	if uintarray[lo] < uintarray[hi] {
+//mergesort recursively divides each array in half and sorts the smallest sizes, then merges them back after returning.
+func mergesort(uintarray []int64) {
+
+	if len(uintarray) > 1 {
+		mid := len(uintarray) / 2
+		left := DeepCopy(uintarray[0:mid])
+		right := DeepCopy(uintarray[mid:])
+
+		mergesort(left)
+		mergesort(right)
+
+		l := 0
+		r := 0
+
+		for i := 0; i < len(uintarray); i++ {
+
+			lval := NADA
+			rval := NADA
+
+			if l < len(left) {
+				lval = left[l]
+			}
+
+			if r < len(right) {
+				rval = right[r]
+			}
+
+			if (lval != NADA && rval != NADA && lval < rval) || rval == NADA {
+				uintarray[i] = lval
+				l++
+			} else if (lval != NADA && rval != NADA && lval >= rval) || lval == NADA {
+				uintarray[i] = rval
+				r++
+			}
+
+		}
+	}
+
+}
+
+//stub out threaded mergesort algorithms's function call.
+//See the readme for more info on tmergesort.
+func tmergesort(uintarray []int64, r chan []int64) {
+	if len(uintarray) < MINLEN {
+		mergesort(uintarray)
+		r <- uintarray
+		return
+	}
+
+	leftchan := make(chan []int64)
+	rightchan := make(chan []int64)
+	middle := len(uintarray) / 2
+
+	go tmergesort(uintarray[:middle], leftchan)
+	go tmergesort(uintarray[middle:], rightchan)
+
+	luintarray := <-leftchan
+	ruintarray := <-rightchan
+
+	r <- merge(luintarray, ruintarray)
+	close(leftchan)
+	close(rightchan)
+	return
+
+}
+
+//merge is a function that actually performs the merge of two arrays for the mergesort algorithm.
+func merge(left, right []int64) []int64 {
+
+	size, i, j := len(left)+len(right), 0, 0
+	slice := make([]int64, size, size)
+
+	for k := 0; k < size; k++ {
+		if i > len(left)-1 && j <= len(right)-1 {
+			slice[k] = right[j]
+			j++
+		} else if j > len(right)-1 && i <= len(left)-1 {
+			slice[k] = left[i]
+			i++
+		} else if left[i] < right[j] {
+			slice[k] = left[i]
+			i++
+		} else {
+			slice[k] = right[j]
+			j++
+		}
+	}
+	return slice
+}
+
+func tquicksort(uintarray []int64) {
+
+	if len(uintarray) > 1 {
+		pivotIndex := len(uintarray) / 2
+		var smallerItems = []int64{}
+		var largerItems = []int64{}
+
+		for i := range uintarray {
+			val := uintarray[i]
+			if i != pivotIndex {
+				if val < uintarray[pivotIndex] {
+					smallerItems = append(smallerItems, val)
+				} else {
+					largerItems = append(largerItems, val)
+				}
+			}
+		}
+
+		smallerChan := make(chan string)
+		go func() {
+			tquicksort(smallerItems)
+			smallerChan <- "smaller items finished."
+		}()
+		go func() {
+			tquicksort(largerItems)
+			smallerChan <- "larger items finished."
+		}()
+
+		var merged = append(append(append([]int64{}, smallerItems...), []int64{uintarray[pivotIndex]}...), largerItems...)
+
+		for j := 0; j < len(uintarray); j++ {
+			uintarray[j] = merged[j]
+		}
 
 	}
-	return nil
+	return
 }
 
-//partitioning function for quicksort algorithm
-func quicksortpart(uintarray []int, lo int, hi int) (err error) {
-	fmt.Printf("entering quicksort partitioning.")
-	return nil
+//quicksort algorithm uses pivot value for divide and conquer to sort smaller arrays and put back together sorted
+func quicksort(uintarray []int64) {
+
+	if len(uintarray) > 1 {
+		pivotIndex := len(uintarray) / 2
+		var smallerItems = []int64{}
+		var largerItems = []int64{}
+
+		for i := range uintarray {
+			val := uintarray[i]
+			if i != pivotIndex {
+				if val < uintarray[pivotIndex] {
+					smallerItems = append(smallerItems, val)
+				} else {
+					largerItems = append(largerItems, val)
+				}
+			}
+		}
+
+		quicksort(smallerItems)
+		quicksort(largerItems)
+
+		var merged = append(append(append([]int64{}, smallerItems...), []int64{uintarray[pivotIndex]}...), largerItems...)
+
+		for j := 0; j < len(uintarray); j++ {
+			uintarray[j] = merged[j]
+		}
+
+	}
+	return
 }
 
-//stubbing out heapsort algorithm's function call
-func heapsort(uintarray []int) (err error) {
-	fmt.Printf("entering heapsort")
-	return nil
+//heapify is a helper function for heapsort
+func heapify(items []int64, idx int64, size int64) {
+	l := 2*idx + 1 // left = 2*i + 1
+	r := 2*idx + 2 // right = 2*i + 2
+
+	var largest int64
+	if l <= size && items[l] > items[idx] {
+		largest = l
+	} else {
+		largest = idx
+	}
+
+	if r <= size && items[r] > items[largest] {
+		largest = r
+	}
+
+	if largest != idx {
+		t := items[idx]
+		items[idx] = items[largest]
+		items[largest] = t
+		heapify(items, largest, size)
+	}
+	return
 }
 
-/*
-Bubblesort. See Readme for more info.
-*/
-func bubblesort(uintarray []int) (err error) {
+//heapsort function creates a heap of unsorted items and
+func heapsort(items []int64) {
+	var L int64
+	L = int64(len(items)) //heap size
+	m := int64(L / 2)     //middle
+
+	for i := m; i >= 0; i-- {
+
+		heapify(items, i, L-1)
+	}
+
+	F := L - 1
+	for j := F; j >= 0; j-- {
+		t := items[0]
+		items[0] = items[j]
+		items[j] = t
+		F--
+		heapify(items, 0, F)
+	}
+	return
+}
+
+//Bubblesort. See Readme for more info.
+func bubblesort(uintarray []int64) {
 	var (
 		intlen  = len(uintarray)
 		swapped = true
@@ -63,73 +262,217 @@ func bubblesort(uintarray []int) (err error) {
 			}
 		}
 	}
-
-	return nil
+	return
 }
 
-func builtInSort(uintarray []int) (err error) {
+//shellsort is an unstable algo, which should yield some variance in the test results.
+func shellsort(uintarray []int64) {
+	var (
+		n    = len(uintarray)
+		gaps = []int{1}
+		k    = 1
+	)
+
+	for {
+		gap := element(2, k) + 1
+		if gap > n-1 {
+			break
+		}
+		gaps = append([]int{gap}, gaps...)
+		k++
+	}
+
+	for _, gap := range gaps {
+		for i := gap; i < n; i += gap {
+			j := i
+			for j > 0 {
+				if uintarray[j-gap] > uintarray[j] {
+					uintarray[j-gap], uintarray[j] = uintarray[j], uintarray[j-gap]
+				}
+				j = j - gap
+			}
+		}
+	}
+}
+
+//element is a helper function for shellsort
+func element(a, b int) int {
+	e := 1
+	for b > 0 {
+		if b&1 != 0 {
+			e *= a
+		}
+		b >>= 1
+		a *= a
+	}
+	return e
+}
+
+//builtInSort is leveraging the package sort to do an efficient and stable sort
+func builtInSort(uintarray []int64) {
 	sort.Slice(uintarray, func(i, j int) bool {
 		return uintarray[i] < uintarray[j]
 	})
 	return
 }
 
-func arrayprinter(sliceint []int, arrayname string) (err error) {
-	fmt.Printf("\nPrinting values for %s:\n", arrayname)
+func arrayprinter(sliceint []int64, arrayname string) (err error) {
+	fmt.Printf("\nPrinting values for %s:\n[", arrayname)
 	for i := range sliceint {
-		fmt.Printf("Value in %s[%d] is %v\n", arrayname, i, sliceint[i])
+		fmt.Printf("%v ", sliceint[i])
 	}
-	fmt.Printf("The address of pointer slicepointer is %p\n", sliceint)
+	fmt.Printf("]\nThe address of pointer slicepointer is %p\n", sliceint)
 	return nil
+}
+
+func createArray(arraysize int, maxSize int64) (intarray []int64) {
+	var wg sync.WaitGroup
+	for i := 0; i < arraysize; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			r := rand.New(rand.NewSource(time.Now().UnixNano()))
+			val := r.Int63n(maxSize)
+			intarray = append(intarray, val)
+		}()
+	}
+	wg.Wait()
+	return intarray
+}
+
+func routineTimer(start time.Time, delta *time.Duration) {
+	*delta = time.Since(start)
+	return
 }
 
 func main() {
 	var (
-		intarray, bubbleint, mergeint, quickint, heapint, mergeintthread, builtInInt []int
-		arraysize                                                                    int
-		val                                                                          int
-		err                                                                          error
+		bubbleint, mergeint, quickint, heapint, mergeintthread, builtInInt, tquickSortInt, shellSortInt                                    []int64
+		bubblesortTimer, builtInSortTimer, quicksortTimer, mergesortTimer, tmergesortTimer, heapsortTimer, tquickSortTimer, shellSortTimer time.Duration
+		bubbleSortChan                                                                                                                     chan string
 	)
-
-	flag.IntVar(&arraysize, "arraysize", 10, "enter an integer")
-
 	flag.Parse()
+	runtime.GOMAXPROCS(numcpu)
 
-	for i := 0; i < arraysize; i++ {
-		r := rand.New(rand.NewSource(time.Now().UnixNano()))
-		val = r.Intn(1000)
-		intarray = append(intarray, val)
-	}
+	arrayCreateStart := time.Now()
+	intarray := createArray(arraysize, maxIntSize)
+	fmt.Println("time to create array: ", time.Since(arrayCreateStart))
 
+	copyStartTime := time.Now()
 	bubbleint = append(bubbleint, intarray...)
 	mergeint = append(mergeint, intarray...)
 	quickint = append(quickint, intarray...)
 	heapint = append(heapint, intarray...)
 	mergeintthread = append(mergeintthread, intarray...)
 	builtInInt = append(builtInInt, intarray...)
+	shellSortInt = append(shellSortInt, intarray...)
+	fmt.Println("time to copy array to subsequent arrays: ", time.Since(copyStartTime))
 
-	if bubblesort(bubbleint); err != nil {
-		fmt.Printf("Error sorting with bubble sort. Error msg: %v\n", err)
+	shellSortChan := make(chan string)
+	builtInSortChan := make(chan string)
+	quickSortChan := make(chan string)
+	mergeSortChan := make(chan string)
+	heapSortChan := make(chan string)
+	go func(somearray []int64) {
+		start := time.Now()
+		defer routineTimer(start, &builtInSortTimer)
+		builtInSort(somearray)
+		builtInSortChan <- "Finished Built-in sort."
+	}(builtInInt)
+	go func(somearray []int64) {
+		start := time.Now()
+		defer routineTimer(start, &quicksortTimer)
+		quicksort(somearray)
+		quickSortChan <- "Finished Quicksort."
+	}(quickint)
+	go func(somearray []int64) {
+		start := time.Now()
+		defer routineTimer(start, &mergesortTimer)
+		mergesort(somearray)
+		mergeSortChan <- "Finished mergesort."
+	}(mergeint)
+	go func(somearray []int64) {
+		start := time.Now()
+		defer routineTimer(start, &heapsortTimer)
+		heapsort(somearray)
+		heapSortChan <- "Finished heapsort."
+	}(heapint)
+	if !noShellSort {
+		go func() {
+			start := time.Now()
+			defer routineTimer(start, &shellSortTimer)
+			shellsort(shellSortInt)
+			shellSortChan <- "Finished shellsort."
+		}()
+	}
+	fmt.Println(<-quickSortChan)
+	fmt.Println(<-mergeSortChan)
+	fmt.Println(<-heapSortChan)
+	fmt.Println(<-builtInSortChan)
+	if !noShellSort {
+		fmt.Println(<-shellSortChan)
 	}
 
-	if builtInSort(builtInInt); err != nil {
-		fmt.Printf("Error sorting with sort package's sort. Error msg: %v\n", err)
+	testmergestring := make(chan string)
+	rchan := make(chan []int64)
+	var testmergearray []int64
+	go func() {
+		start := time.Now()
+		defer routineTimer(start, &tmergesortTimer)
+		tmergesort(mergeintthread, rchan)
+		testmergestring <- "Finished Threaded Merge Sort."
+	}()
+	testmergearray = <-rchan
+	fmt.Println(<-testmergestring)
+	close(testmergestring)
+
+	tquickSortChan := make(chan string)
+	go func() {
+		start := time.Now()
+		defer routineTimer(start, &tquickSortTimer)
+		tquicksort(tquickSortInt)
+		tquickSortChan <- "Finished Threaded Quicksort."
+	}()
+	fmt.Println(<-tquickSortChan)
+	close(tquickSortChan)
+
+	if !noBubbleSort {
+		bubbleSortChan = make(chan string)
+		go func(somearray []int64) {
+			start := time.Now()
+			defer routineTimer(start, &bubblesortTimer)
+			bubblesort(somearray)
+			bubbleSortChan <- "Finished Bubblesort."
+		}(bubbleint)
+		fmt.Println(<-bubbleSortChan)
 	}
 
-	if quicksort(quickint, 0, len(quickint)-1); err != nil {
-		fmt.Printf("Error sorting with quicksort. Error msg: %v\n", err)
+	if printArray {
+		arrayprinter(testmergearray, "mergeintthread")
 	}
 
-	fmt.Printf("Pointers to arrays:\nintarray:%p\nbubbleint:%p\nmergeint:%p\n"+
-		"quickint:%p\nheapint:%p\nmergeintthread:%p", intarray, bubbleint, mergeint,
-		quickint, heapint, mergeintthread)
+	if !noBubbleSort {
+		fmt.Println("Bubblesort finished after: ", bubblesortTimer)
+	}
+	fmt.Println("Quicksort finished after: ", quicksortTimer)
+	fmt.Println("Heapsort finished after: ", heapsortTimer)
+	fmt.Println("Mergesort finished after: ", mergesortTimer)
+	fmt.Println("Built-in sort finished after: ", builtInSortTimer)
+	if !noShellSort {
+		fmt.Println("Shellsort finished after: ", shellSortTimer)
+	}
+	fmt.Println("Threaded Mergesort finished after: ", tmergesortTimer)
+	fmt.Println("Threaded Quicksort finished after: ", tquickSortTimer)
 
-	arrayprinter(intarray, "intarray")
-	arrayprinter(bubbleint, "bubbleint")
-	arrayprinter(builtInInt, "builtInInt")
-	arrayprinter(mergeint, "mergeint")
-	arrayprinter(quickint, "quickint")
-	arrayprinter(mergeintthread, "mergeintthread")
-
-	return
+	if !noBubbleSort {
+		close(bubbleSortChan)
+	}
+	close(quickSortChan)
+	close(mergeSortChan)
+	close(heapSortChan)
+	close(builtInSortChan)
+	if !noShellSort {
+		close(shellSortChan)
+	}
+	close(rchan)
 }

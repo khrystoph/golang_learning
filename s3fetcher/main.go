@@ -71,7 +71,7 @@ func listOjbects() (objectList *s3.ListObjectsOutput, err error) {
 }
 
 //syncObjects pulls (or pushes) objects to or from s3 bucket/prefix.
-func syncObjects(certs *s3.ListObjectsOutput) (err error) {
+func pullObjects(certs *s3.ListObjectsOutput) (err error) {
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String(awsRegion),
 		Credentials: credentials.NewSharedCredentials("", sessionProfile),
@@ -79,8 +79,8 @@ func syncObjects(certs *s3.ListObjectsOutput) (err error) {
 	if err != nil {
 		return err
 	}
-	if _, err = os.Stat("certs"); os.IsNotExist(err) {
-		err = os.Mkdir("certs", 0755)
+	if _, err = os.Stat(certDir); os.IsNotExist(err) {
+		err = os.Mkdir(certDir, 0755)
 	}
 	if err != nil {
 		return err
@@ -107,6 +107,35 @@ func syncObjects(certs *s3.ListObjectsOutput) (err error) {
 	return nil
 }
 
+func pushCerts(cert string, bucket string) (err error) {
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String(awsRegion),
+		Credentials: credentials.NewSharedCredentials("", sessionProfile),
+	})
+
+	if err != nil {
+		return err
+	}
+
+	uploader := s3manager.NewUploader(sess)
+	f, err := os.OpenFile(cert)
+	if err != nil {
+		return err
+	}
+
+	s3objectKey := filePrefix + cert
+	_, err = uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(bucket),
+		Key:    &s3objectKey,
+		Body:   f,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func main() {
 	flag.Parse()
 
@@ -115,7 +144,14 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	err = syncObjects(certList)
+	err = pullObjects(certList)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	//check certs in directory are valid
+	//if cert in directory invalid and replaced by letsencrypt, call pushCerts to update cert in s3
+	err = pushCerts("testfile", s3bucket) //just testing the functionality works for now
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

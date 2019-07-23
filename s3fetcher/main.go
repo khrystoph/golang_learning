@@ -118,12 +118,12 @@ func pushCerts(cert string, bucket string) (err error) {
 	}
 
 	uploader := s3manager.NewUploader(sess)
-	f, err := os.OpenFile(cert)
+	f, err := os.Open(cert)
 	if err != nil {
 		return err
 	}
 
-	s3objectKey := filePrefix + cert
+	s3objectKey := filePrefix + "/" + cert
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(bucket),
 		Key:    &s3objectKey,

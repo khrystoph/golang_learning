@@ -5,8 +5,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -24,6 +26,11 @@ const (
 var (
 	s3bucket, filePrefix, sessionProfile string
 )
+
+type cert struct {
+	name    string
+	modTime time.Time
+}
 
 func init() {
 	flag.StringVar(&s3bucket, "bucket", "moreip.jbecomputersolutions.com", "Enter your s3 bucket to pull from here.")
@@ -101,6 +108,8 @@ func pullObjects(certs *s3.ListObjectsOutput) (err error) {
 			return err
 		}
 		fmt.Printf("Downloaded file, %d bytes\n", cert)
+		f.Close()
+		f.Sync()
 
 	}
 
@@ -118,13 +127,13 @@ func pushCerts(cert string, bucket string) (err error) {
 	}
 
 	uploader := s3manager.NewUploader(sess)
-	f, err := os.Open(cert)
+	f, err := os.Open(filePrefix + "/" + cert)
 	if err != nil {
 		return err
 	}
 
 	s3objectKey := filePrefix + "/" + cert
-	_, err = uploader.Upload(&s3manager.UploadInput{
+	result, err := uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(bucket),
 		Key:    &s3objectKey,
 		Body:   f,
@@ -133,10 +142,12 @@ func pushCerts(cert string, bucket string) (err error) {
 		return err
 	}
 
+	fmt.Printf("file uploaded to, %s\n", aws.StringValue(&result.Location))
 	return nil
 }
 
 func main() {
+	var fileModTime []cert
 	flag.Parse()
 
 	certList, err := listOjbects()
@@ -149,11 +160,52 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	//check certs in directory are valid
-	//if cert in directory invalid and replaced by letsencrypt, call pushCerts to update cert in s3
-	err = pushCerts("testfile", s3bucket) //just testing the functionality works for now
+	cacheFileList, err := ioutil.ReadDir(certDir)
+
+	for _, certFile := range cacheFileList {
+		info, name := certFile.ModTime(), certFile.Name()
+		fileModTime = append(fileModTime, cert{name: name, modTime: info})
+	}
+	time.Sleep(10 * time.Second)
+	f, err := os.OpenFile(filePrefix+"/"+cacheFileList[0].Name(), os.O_APPEND|os.O_WRONLY, os.ModeAppend)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
+	}
+	fmt.Printf("Attempting to modify: %+v\n", f.Name())
+	_, err = f.Write([]byte("test to modify file."))
+	if err != nil {
+		fmt.Printf("error writing to test file: %+v", f)
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	fmt.Println("File: " + f.Name() + " modified.")
+	f.Sync()
+	fileStatTest, err := f.Stat()
+	if err != nil {
+		fmt.Printf("error stat'ing: %s", f.Name())
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	f.Close()
+	fileStatModTime := fileStatTest.ModTime()
+	fmt.Printf("%v", fileStatModTime)
+
+	for index, certFile := range fileModTime {
+		certStat, err := os.Stat(filePrefix + "/" + certFile.name)
+		info, name := certStat.ModTime(), certStat.Name()
+		if fileModTime[index].name != name {
+			fmt.Println("file names do not match. Panic.")
+			os.Exit(1)
+		}
+		fmt.Printf("modTime from original cache file: \t%v\nmodTime after modification: \t\t%v\n", fileModTime[index].modTime, info)
+		if info != fileModTime[index].modTime {
+			fmt.Printf("file: %s, modified @:\n%v.\n...Updating cache.\n", name, info)
+			err = pushCerts(name, s3bucket) //just testing the functionality works for now
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+		}
 	}
 }
